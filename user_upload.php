@@ -31,9 +31,10 @@ try {
         $db->createTable();
         echo "Table 'users' has been created.\n";
     } else { // --file
-        $csv = new CSVReaderWriter($options['--file'], isset($options['--dry_run']));
+        $csv = new CSVReaderWriter($db, $options['--file'], isset($options['--dry_run']));
         $csv->readFileWriteDb();
     }
+    echo "\nFinished successfully.\n\n";
     if ($db !== null) {
         $db->close();
     }
