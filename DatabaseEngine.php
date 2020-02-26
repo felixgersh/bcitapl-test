@@ -73,4 +73,9 @@ ENGINE=InnoDB';
         $this->queryDb($sql);
     }
 
+    public function getConnection()
+    {
+        return $this->conn;
+    }
+
 }
