@@ -36,17 +36,19 @@ class CommandLineParser
             } elseif ($this->assignShortOption($i, '-u', 'MySQL username')) {
             } elseif ($this->assignShortOption($i, '-p', 'MySQL password')) {
             } else {
-                throw new Exception('Unknown option in the command line: '.$argv[$i]);
+                throw new Exception('unknown option in the command line: '.$argv[$i]);
             }
         }
         if (isset($this->options['--create_table'])) {
             if (isset($this->options['--dry_run'])) {
-                throw new Exception('You cannot run --create_table in --dry_run mode');
+                throw new Exception('you cannot run --create_table in --dry_run mode');
             }
             if (isset($this->options['--file'])) {
-                throw new Exception('You cannot run --create_table together with CSV file upload');
+                throw new Exception('you cannot run --create_table together with CSV file upload');
             }
             $this->checkShortOptions();
+        } elseif (!isset($this->options['--file'])) {
+            throw new Exception('either --file or --create_table should be specified');
         }
     }
 
@@ -112,6 +114,11 @@ database won't be altered
     public function printOptions()
     {
         print_r($this->options);
+    }
+
+    public function getOptions()
+    {
+        return $this->options;
     }
 
 }
