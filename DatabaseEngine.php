@@ -1,13 +1,15 @@
 <?php
 
+define('DB_NAME', 'users_catalyst_test');
+define('TABLE_NAME', 'users');
+
 class DatabaseEngine
 {
     private $conn;
-    private $databaseName = 'users_catalyst_test';
 
     public function __construct($params)
     {
-        $mysqli = @new mysqli($params['-h'], $params['-u'], $params['-p'], $this->databaseName);
+        $mysqli = @new mysqli($params['-h'], $params['-u'], $params['-p'], DB_NAME);
         if ($mysqli->connect_error) {
             throw new Exception($params['-h'].' connect error ('.$mysqli->connect_errno.'): '.$mysqli->connect_error);
         }
@@ -33,7 +35,7 @@ class DatabaseEngine
 
     public function getTableExistence()
     {
-        $sql = "SELECT COUNT(1) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '{$this->databaseName}' AND TABLE_NAME = 'users'";
+        $sql = 'SELECT COUNT(1) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = "'.DB_NAME.'" AND TABLE_NAME = "'.TABLE_NAME.'"';
         $row = $this->queryDb($sql)->fetch_row();
         if (empty($row)) {
             throw new Exception('cannot get information about table existence, something went wrong');
@@ -60,7 +62,7 @@ class DatabaseEngine
     public function createTable()
     {
         $ddlFilename = 'users.ddl';
-        $sql = file_get_contents($ddlFilename);
+        $sql = @file_get_contents($ddlFilename);
         if ($sql === false) {
             throw new Exception("cannot read $ddlFilename");
         }
