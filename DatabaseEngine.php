@@ -14,14 +14,14 @@ class DatabaseEngine
         $mysqli->set_charset('utf8');
         $this->conn = $mysqli;
     }
-    
+
     public function close()
     {
         if (!empty($this->conn)) {
             $this->conn->close();
         }
     }
-    
+
     public function queryDb($sql)
     {
         $mysql_result = $this->conn->query($sql);
@@ -30,7 +30,7 @@ class DatabaseEngine
         }
         return $mysql_result;
     }
-    
+
     public function getTableExistence()
     {
         $sql = "SELECT COUNT(1) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '{$this->databaseName}' AND TABLE_NAME = 'users'";
@@ -40,7 +40,7 @@ class DatabaseEngine
         }
         return $row[0] == 1;
     }
-    
+
     public function getRecordsCount()
     {
         $sql = "SELECT COUNT(1) FROM users";
@@ -50,26 +50,20 @@ class DatabaseEngine
         }
         return $row[0];
     }
-    
+
     public function dropTable()
     {
         $sql = 'DROP TABLE users';
         $this->queryDb($sql);
     }
-    
+
     public function createTable()
     {
-        $sql = '
-CREATE TABLE `users` (
-	`Id` INT(11) NOT NULL AUTO_INCREMENT,
-	`Name` VARCHAR(100) NOT NULL,
-	`Surname` VARCHAR(100) NOT NULL,
-	`Email` VARCHAR(100) NOT NULL,
-	PRIMARY KEY (`Id`),
-	UNIQUE INDEX `Email` (`Email`)
-)
-COLLATE="utf8_unicode_ci"
-ENGINE=InnoDB';
+        $ddlFilename = 'users.ddl';
+        $sql = file_get_contents($ddlFilename);
+        if ($sql === false) {
+            throw new Exception("cannot read $ddlFilename");
+        }
         $this->queryDb($sql);
     }
 
