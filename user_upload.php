@@ -7,7 +7,7 @@ require_once 'CSVReaderWriter.php';
 $db = null;
 try {
     $parser = new CommandLineParser($argc, $argv);
-    $parser->printOptions();
+    //$parser->printOptions();
     $options = $parser->getOptions();
     if (!isset($options['--dry_run'])) {
         $db = new DatabaseEngine($options);
@@ -26,11 +26,10 @@ try {
                 $db->close();
                 exit(0);
             }
-            //echo "$str\n";
         }
         $db->createTable();
         echo "Table 'users' has been created.\n";
-    } else { // --file
+    } else {
         $csv = new CSVReaderWriter($db, $options['--file'], isset($options['--dry_run']));
         $csv->readFileWriteDb();
     }
@@ -43,8 +42,6 @@ try {
         CommandLineParser::displayHelp();
     } else {
         echo "\nError: ".$e->getMessage()."\n\n";
-        //echo $db === null ? 'null' : 'not null';
-        //echo "\n";
         if ($db !== null) {
             $db->close();
         }
