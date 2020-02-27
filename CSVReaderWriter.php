@@ -6,7 +6,7 @@ class CSVReaderWriter
 {
     private $db;
     private $handle = null;
-    private $dryRun;
+    private $dryRun, $processMessage;
 
     public function __construct($db, $filename, $dryRun)
     {
@@ -16,6 +16,7 @@ class CSVReaderWriter
             throw new Exception("could not open file $filename");
         }
         $this->dryRun = $dryRun;
+        $this->processMessage = $dryRun ? 'processed' : 'inserted';
     }
 
     public function __destruct()
@@ -35,34 +36,49 @@ class CSVReaderWriter
             if (strlen($data[$key]) == 0) {
                 throw new Exception("line $counter: $param should not be empty");
             }
-        }
-        if (!filter_var($data[2], FILTER_VALIDATE_EMAIL)) {
-            throw new Exception("line $counter: email '{$data[2]}' is invalid");
+            if ($param == 'name') {
+                $data[$key] = ucfirst(strtolower($data[$key]));
+            } elseif ($param == 'surname') {
+                $surname = $data[$key];
+                if (($surname[1] == "'") && (($surname[0] == 'O') || ($surname[0] == 'o'))) {
+                    $surname = "O'".ucfirst(strtolower(substr($surname, 2)));
+                } else {
+                    $surname = ucfirst(strtolower($surname));
+                }
+                $data[$key] = $surname;
+            } else { // email
+                if (!filter_var($data[$key], FILTER_VALIDATE_EMAIL)) {
+                    throw new Exception("line $counter: $param '{$data[$key]}' is invalid");
+                }
+                $data[$key] = strtolower($data[$key]);
+            }
         }
     }
 
     private function writeBufferToDb(&$buffer, &$bufferCounter, $totalCounter)
     {
-        $sql = 'INSERT INTO `users` (`Name`, `Surname`, `Email`) VALUES ';
-        $conn = $this->db->getConnection();
-        $nextRecord = false;
-        foreach ($buffer as $record) {
-            if ($nextRecord) {
-                $sql .= ',';
-            } else {
-                $nextRecord = true;
+        if (!$this->dryRun) {
+            $sql = 'INSERT INTO `users` (`Name`, `Surname`, `Email`) VALUES ';
+            $conn = $this->db->getConnection();
+            $nextRecord = false;
+            foreach ($buffer as $record) {
+                if ($nextRecord) {
+                    $sql .= ',';
+                } else {
+                    $nextRecord = true;
+                }
+                $name = $conn->real_escape_string($record[0]);
+                $surname = $conn->real_escape_string($record[1]);
+                $email = $conn->real_escape_string($record[2]);
+
+                $sql .= "('$name', '$surname', '$email')";
             }
-            // TODO: trim values, handle O'connor correctly
-            $name = $conn->real_escape_string(ucfirst(strtolower($record[0])));
-            $surname = $conn->real_escape_string(ucfirst(strtolower($record[1])));
-            $email = $conn->real_escape_string(strtolower($record[2]));
-            $sql .= "('$name', '$surname', '$email')";
-        }
-        if (!$conn->query($sql)) {
-            throw new Exception($conn->error);
+            if (!$conn->query($sql)) {
+                throw new Exception($conn->error);
+            }
         }
         $startRecordNum = $totalCounter - $bufferCounter + 1;
-        echo "Records from $startRecordNum to $totalCounter inserted.\n";
+        echo "Records from $startRecordNum to $totalCounter {$this->processMessage}\n";
         $buffer = [];
         $bufferCounter = 0;
     }
@@ -78,7 +94,7 @@ class CSVReaderWriter
             $bufferCounter++;
             $this->validateCSVLine($totalCounter, $data);
             $buffer[] = $data;
-            if ($bufferCounter == BUFFER_LEN) { // TODO: dry run
+            if ($bufferCounter == BUFFER_LEN) {
                 $this->writeBufferToDb($buffer, $bufferCounter, $totalCounter);
             }
         }
